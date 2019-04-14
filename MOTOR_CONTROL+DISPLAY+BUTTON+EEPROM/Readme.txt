@@ -2,3 +2,4 @@
 + I2C channel
 + I2C address
 
+In the state machine, to change the state of flag, need to a loop 

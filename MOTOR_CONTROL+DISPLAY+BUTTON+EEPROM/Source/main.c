@@ -47,10 +47,10 @@ I2C_InitTypeDef		  		I2C_InitStructure;
 /*-------------------------------------STATE MACHINE-------------------------------------------------*/	
 #define SETUP             0
 #define FB_CONTROL    		1
-#define SAVE_DATA		      3
-#define RUN_EPROM					4
-#define DISPLAY           5
-#define DEFALT            6
+#define SET_DATA		      2
+#define RUN_EPROM					3
+#define DISPLAY           4
+#define DEFALT            5
 
 int   state=DEFALT;
 volatile uint8_t flagControl=0;
@@ -92,73 +92,73 @@ int main(void)
 			
 		lcd_init ();   
 		lcd_goto_XY(1,0);
-		lcd_send_string ((uint8_t*)"SET SPEED:");
-		lcd_goto_XY(3,0);
-		lcd_send_string((uint8_t*)"REAL SPEED:");
-					
+		lcd_send_string ((uint8_t*)"SET SPEED   :");
+		lcd_goto_XY(2,0);
+		lcd_send_string((uint8_t*)"ACTUAL SPEED:");	
 while (1)
   {			
 		switch(state)
 			{
 				case SETUP:
-						state=DISPLAY;
+						flagMode=Keypad_Getkey();
+											if(flagMode==2)
+												{
+													FB_Control(counterPulse);
+													state=DISPLAY;
+													break;
+												}			
+											
+											if(flagMode==3)
+												{
+													state=SET_DATA;
+													break;
+												}
+												
+											if(flagMode==4)
+												{
+													state=RUN_EPROM;
+													break;
+												}	
+											else	state=DISPLAY;
 					break;
 								
 				case FB_CONTROL:
 						FB_Control(inputSpeed);
-						while(sampleCount>10){break;}
-						state=DISPLAY;
+						state=DISPLAY;					
 					break;
 								
-				case SAVE_DATA:
+				case SET_DATA:
 								EEPROM_Write(inputSpeed);
-								lcd_goto_XY(1,14);
-								lcd_send_string((uint8_t*)"SAVED");	
 								state=DISPLAY;
 					break;
 				
 				case RUN_EPROM:
-								inputSpeed=EEPROM_Read();
+								counterPulse=EEPROM_Read();
+								inputSpeed=counterPulse;
 								sprintf((char*)Buff_Str,"%d",inputSpeed);
-								lcd_goto_XY(1,10);
-								lcd_send_string((uint8_t*)"        ");
-								lcd_goto_XY(1,10);
-								lcd_send_string(Buff_Str);	
-				
-								//test
 								lcd_goto_XY(1,14);
-								lcd_send_string((uint8_t*)"EEPROM");
+								lcd_send_string((uint8_t*)"   ");
+								lcd_goto_XY(1,14);
+								lcd_send_string(Buff_Str);	
 								state=FB_CONTROL;
 					break;
 				
 				case DISPLAY:
+					while(sampleCount>10){break;}
+							{													
 										sprintf((char*)buffer,"%d",inputSpeed);
-										lcd_goto_XY(1,10);
+										lcd_goto_XY(1,14);
 										lcd_send_string((uint8_t*)"    ");
-										lcd_goto_XY(1,10);
+										lcd_goto_XY(1,14);
 										lcd_send_string((uint8_t*)buffer);
 										
 										sprintf((char*)buffer1,"%d",actualSpeed);
-										lcd_goto_XY(2,11);
+										lcd_goto_XY(2,14);
 										lcd_send_string((uint8_t*)"            ");
-										lcd_goto_XY(2,11);
+										lcd_goto_XY(2,14);
 										lcd_send_string((uint8_t*)buffer1);
-
-										flagMode=Keypad_Getkey();
-											if(flagMode==2)
-											{
-												state=FB_CONTROL;
-											}		
-							
-											if(flagMode==3)
-												{
-													state=SAVE_DATA;
-												}	
-												
-											if(flagMode==4)
-											{
-												state=RUN_EPROM;
-											}	
+							}			
+										state=SETUP;
 					break;
 				
 				case DEFALT:
